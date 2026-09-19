@@ -2,7 +2,7 @@
 
 India-focused automotive discovery platform — [findurwheeler.com](https://findurwheeler.com).
 
-Built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, and plain CSS with design tokens. No UI or state libraries.
+Built with **Next.js 16 (App Router)**, **React 19**, **JavaScript (JSX)**, and plain CSS with design tokens. No UI or state libraries.
 
 ## Requirements
 
@@ -22,7 +22,6 @@ npm run dev                     # http://localhost:3000
 | `npm run dev` | Dev server |
 | `npm run build` / `npm start` | Production build / serve it |
 | `npm run lint` | ESLint |
-| `npm run typecheck` | TypeScript, no emit |
 | `npm run inspect:api` | Fetches the cars API and prints its real shape (see below) |
 
 ## Connect to GitHub
@@ -52,9 +51,9 @@ Cars come from the WordPress REST API:
 - `GET {FWY_API_BASE_URL}/cars`
 - `GET {FWY_API_BASE_URL}/cars/{id}`
 
-`src/lib/api.ts` is the only place that talks to it (server-side only, cached 5 minutes).
-**Car types are deliberately not written yet.** Run `npm run inspect:api`, then define
-`src/types/car.ts` from the real response.
+`src/lib/api.js` is the only place that talks to it (server-side only, cached 5 minutes).
+**Car data shapes are deliberately not assumed yet.** Run `npm run inspect:api`, then document
+the real response (JSDoc typedefs) before building the listing and detail pages.
 
 ## Structure
 
@@ -62,7 +61,7 @@ Cars come from the WordPress REST API:
 src/
   app/            routes, layout, global CSS (design tokens live in globals.css)
   components/     Header, MobileMenu, Footer, ComingSoon
-  lib/            site.ts (name, URL, nav) · api.ts (API client)
+  lib/            site.js (name, URL, nav) · api.js (API client)
 scripts/          inspect-api.mjs
 ```
 
