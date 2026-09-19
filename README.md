@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # FindUrWheeler
 
 India-focused automotive discovery platform — [findurwheeler.com](https://findurwheeler.com).
@@ -71,3 +72,7 @@ scripts/          inspect-api.mjs
 - Placeholder (marked `noindex`): `/cars`, `/upcoming-cars`, `/brands`, `/compare`, `/news`.
 - Not built yet: listing, car detail, brand, compare and search — pending the API response shape.
 - Not included (needs your content): About, Contact, Privacy Policy, Terms pages and social links.
+=======
+# findurwheeler
+Car listing and information
+>>>>>>> a90cf998d578c2c4dc59f449dc20350c98e5d715
