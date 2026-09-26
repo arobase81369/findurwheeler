@@ -1,4 +1,5 @@
 import { Inter, Poppins } from "next/font/google";
+import { CompareBar } from "@/components/CompareBar";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { SITE } from "@/lib/site";
@@ -53,6 +54,7 @@ export default function RootLayout({ children }) {
         <Header />
         <main id="main">{children}</main>
         <Footer />
+        <CompareBar />
       </body>
     </html>
   );

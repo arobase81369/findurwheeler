@@ -1,16 +1,11 @@
 /**
  * Thin wrapper around the FindUrWheeler WordPress REST API.
- *
- * Only call this from server code (Server Components, route handlers) so the
- * browser never talks to WordPress directly and there are no CORS concerns.
- *
- * Car/variant shapes are intentionally NOT assumed yet: document them (JSDoc
- * typedefs) from the real API response (run `npm run inspect:api`).
+ * Server-only: call from Server Components and route handlers so the browser never
+ * talks to WordPress directly (no CORS concerns).
  */
 
 const API_BASE =
-  process.env.FWY_API_BASE_URL ??
-  "https://yellow-kudu-942759.hostingersite.com/wp-json/fwy/v1";
+  process.env.FWY_API_BASE_URL ?? "https://arobasedesigns.in/wp-json/fwy/v1";
 
 export class ApiError extends Error {
   /** @param {number} status @param {string} message */
@@ -21,8 +16,19 @@ export class ApiError extends Error {
   }
 }
 
+/** { a: 1, b: "" } -> "?a=1". Skips null, undefined and empty values. */
+export function buildQuery(params = {}) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === null || value === undefined || value === "") continue;
+    search.set(key, String(value));
+  }
+  const query = search.toString();
+  return query ? `?${query}` : "";
+}
+
 /**
- * @param {string} path e.g. "/cars" or "/cars/1"
+ * @param {string} path e.g. "/cars" or "/cars?fuel=Petrol"
  * @param {{ revalidate?: number }} [options] revalidate = seconds to cache (default 300)
  * @returns {Promise<any>}
  */
@@ -35,7 +41,7 @@ export async function apiGet(path, options = {}) {
   });
 
   if (!response.ok) {
-    // Keep the message generic: never surface raw upstream errors to users.
+    // Generic message: never surface raw upstream errors to users.
     throw new ApiError(response.status, `Request to ${path} failed with status ${response.status}`);
   }
 

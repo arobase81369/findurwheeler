@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { NAV_LINKS } from "@/lib/site";
+import { Icon } from "./Icon";
 import { MobileMenu } from "./MobileMenu";
+import { SearchBox } from "./SearchBox";
 
 export function Header() {
   return (
@@ -23,11 +25,18 @@ export function Header() {
           ))}
         </nav>
 
+        <div className="site-header__search">
+          <SearchBox variant="header" />
+        </div>
+
         <div className="site-header__actions">
-          <Link href="/cars" className="btn btn--primary btn--sm site-header__cta">
-            Search cars
+          <Link href="/compare" className="btn btn--secondary btn--sm site-header__cta">
+            <Icon name="compare" size={16} />
+            Compare
           </Link>
-          <MobileMenu links={NAV_LINKS} />
+          <MobileMenu links={NAV_LINKS}>
+            <SearchBox variant="menu" />
+          </MobileMenu>
         </div>
       </div>
     </header>

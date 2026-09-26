@@ -11,7 +11,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 
 const BASE = (process.env.FWY_API_BASE_URL ??
-  "https://yellow-kudu-942759.hostingersite.com/wp-json/fwy/v1").replace(/\/$/, "");
+  "https://arobasedesigns.in/wp-json/fwy/v1").replace(/\/$/, "");
 
 async function get(path) {
   const url = `${BASE}${path}`;

@@ -2,11 +2,9 @@
 const nextConfig = {
   poweredByHeader: false,
   images: {
-    // Car images are expected to be served from the WordPress backend.
-    // Confirm the real image host from the API response, then adjust/add hosts here.
-    remotePatterns: [
-      { protocol: "https", hostname: "yellow-kudu-942759.hostingersite.com" },
-    ],
+    // Car images are served from the WordPress backend. The API currently returns
+    // http:// image URLs; protocol is omitted so both http and https are allowed.
+    remotePatterns: [{ hostname: "arobasedesigns.in" }],
   },
 };
 
