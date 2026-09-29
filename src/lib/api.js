@@ -47,3 +47,29 @@ export async function apiGet(path, options = {}) {
 
   return response.json();
 }
+
+/**
+ * POST JSON to the API. Throws ApiError for non-2xx responses or `{ success: false }` bodies.
+ * @param {string} path
+ * @param {unknown} body
+ */
+export async function apiPost(path, body) {
+  const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, `Request to ${path} failed with status ${response.status}`);
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  if (payload && payload.success === false) {
+    throw new ApiError(400, `Request to ${path} was rejected`);
+  }
+  return payload;
+}

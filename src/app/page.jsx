@@ -8,8 +8,10 @@ import { SearchBox } from "@/components/SearchBox";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StateMessage } from "@/components/StateMessage";
 import { TabbedCars } from "@/components/TabbedCars";
+import { LatestNews } from "@/components/LatestNews";
 import { UpcomingCard } from "@/components/UpcomingCard";
 import { getBrands, getCars, getUpcomingCars } from "@/lib/cars";
+import { getNews } from "@/lib/news";
 import { BUDGETS, buildFacets, inBudget } from "@/lib/facets";
 import { hrefWith } from "@/lib/listing";
 
@@ -31,11 +33,12 @@ const WHY = [
 ];
 
 export default async function HomePage() {
-  const [carsResult, brandsResult, upcomingResult] = await Promise.allSettled([
+  const [carsResult, brandsResult, upcomingResult, news] = await Promise.allSettled([
     getCars(),
     getBrands(),
     getUpcomingCars(),
-  ]);
+    getNews(),
+  ]).then(([c, b, u, n]) => [c, b, u, n.status === "fulfilled" ? n.value : { ok: false, articles: [] }]);
 
   const cars = carsResult.status === "fulfilled" ? carsResult.value : null;
   const brands = brandsResult.status === "fulfilled" ? brandsResult.value : null;
@@ -263,6 +266,9 @@ export default async function HomePage() {
           </div>
         </section>
       ) : null}
+
+      {/* News */}
+      <LatestNews news={news} />
 
       {/* Why */}
       <section className="page-section page-section--alt" aria-labelledby="why-title">

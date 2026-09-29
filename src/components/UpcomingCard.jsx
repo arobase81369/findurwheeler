@@ -1,49 +1,57 @@
 import Image from "next/image";
 import { Icon } from "./Icon";
 
-/** Upcoming cars have no detail page yet, so this card is not a link. */
+/** Upcoming cars have no detail page yet, so this card is not a link. Same look as CarCard. */
 export function UpcomingCard({ car }) {
+  const facts = [
+    { icon: "car", label: "Body type", value: car.bodyType },
+    { icon: "fuel", label: "Fuel", value: car.fuels.join(" / ") },
+    { icon: "calendar", label: "Expected launch", value: car.launchDate },
+  ];
+
   return (
-    <article className="car-card car-card--upcoming">
-      <div className="car-card__media">
+    <article className="cc">
+      <div className="cc__media">
         {car.image ? (
           <Image
             src={car.image}
             alt=""
             fill
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="car-card__img"
+            className="cc__img"
           />
         ) : (
-          <span className="car-card__placeholder">Image not available</span>
+          <span className="cc__placeholder">Image not available</span>
         )}
-        <span className="car-card__badge">{car.launchStatusLabel || "Upcoming"}</span>
-      </div>
-      <div className="car-card__body">
-        {car.brand ? <p className="car-card__brand">{car.brand}</p> : null}
-        <h3 className="car-card__title">{car.title}</h3>
-        <p className="car-card__price">{car.priceLabel ? `Expected ${car.priceLabel}` : "Price not announced"}</p>
-        <ul className="car-card__facts">
-          <li>
-            <Icon name="calendar" size={16} />
-            {car.launchDate ? `Expected ${car.launchDate}` : "Launch date not announced"}
-          </li>
-          {car.bodyType ? (
-            <li>
-              <Icon name="car" size={16} />
-              {car.bodyType}
-            </li>
-          ) : null}
-        </ul>
-        {car.fuels.length > 0 ? (
-          <ul className="chips" aria-label="Fuel types">
-            {car.fuels.map((fuel) => (
-              <li key={fuel} className="chip">
-                {fuel}
-              </li>
-            ))}
-          </ul>
+        <span className="cc__pill cc__pill--left cc__pill--accent">{car.launchStatusLabel || "Upcoming"}</span>
+        {car.modelYear ? (
+          <span className="cc__pill cc__pill--right">
+            <Icon name="calendar" size={14} />
+            {car.modelYear}
+          </span>
         ) : null}
+      </div>
+
+      <div className="cc__body">
+        <h3 className="cc__title">{car.title}</h3>
+        {car.startPriceLabel ? (
+          <>
+            <p className="cc__price">{car.startPriceLabel}</p>
+            <p className="cc__note">Expected price{car.maxPriceLabel ? ` · up to ${car.maxPriceLabel}` : ""}</p>
+          </>
+        ) : (
+          <p className="cc__price cc__price--missing">Price not announced</p>
+        )}
+
+        <ul className="cc__facts">
+          {facts.map((fact) => (
+            <li key={fact.label} className="cc__fact">
+              <Icon name={fact.icon} size={20} />
+              <span className="visually-hidden">{fact.label}: </span>
+              <span className="cc__fact-value">{fact.value || "Not announced"}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </article>
   );

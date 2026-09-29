@@ -84,3 +84,12 @@ export function initials(name) {
     .join("")
     .toUpperCase();
 }
+
+/** "2026-09-08" -> "08 September 2026" (news dates). Returns the input unchanged if it is not a date. */
+export function formatDateLong(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  const date = new Date(text.length <= 10 ? `${text}T00:00:00Z` : text.replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return text;
+  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" });
+}

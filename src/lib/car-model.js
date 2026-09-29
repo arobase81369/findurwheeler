@@ -1,6 +1,7 @@
 import {
   MILEAGE_UNIT,
   formatDate,
+  formatInrShort,
   formatNumberRange,
   formatPriceRange,
   humanize,
@@ -51,6 +52,8 @@ export function toCar(raw) {
     priceMin,
     priceMax,
     priceLabel: formatPriceRange(priceMin, priceMax),
+    startPriceLabel: formatInrShort(priceMin ?? priceMax),
+    maxPriceLabel: priceMin != null && priceMax != null && priceMax > priceMin ? formatInrShort(priceMax) : null,
     mileageMin,
     mileageMax,
     mileageLabel: formatNumberRange(mileageMin, mileageMax, MILEAGE_UNIT),

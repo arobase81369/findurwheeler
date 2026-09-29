@@ -20,6 +20,10 @@ const PATHS = {
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   home: <path d="M4 11.5 12 5l8 6.5M6 10.5V19h12v-8.5M10 19v-5h4v5" />,
   chevronRight: <path d="m9 6 6 6-6 6" />,
+  facebook: <path d="M14 9V7.5a1 1 0 0 1 1-1h2V3h-2.5A3.5 3.5 0 0 0 11 6.5V9H8.5v3.5H11V21h3v-8.5h2.5L17 9z" />,
+  instagram: (<><rect x="4" y="4" width="16" height="16" rx="4.5" /><circle cx="12" cy="12" r="3.5" /><circle cx="16.8" cy="7.2" r=".6" /></>),
+  youtube: (<><rect x="3" y="6" width="18" height="12" rx="3.5" /><path d="m10.5 9.5 4 2.5-4 2.5z" /></>),
+  linkedin: (<><rect x="4" y="4" width="16" height="16" rx="3" /><path d="M8 11v5M8 8v.01M11.5 16v-5M11.5 13a2.5 2.5 0 0 1 5 0v3" /></>),
 };
 
 /** Small inline icon set (stroke icons, inherit text colour). Decorative by default. */
