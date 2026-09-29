@@ -41,6 +41,34 @@ function formatValue(key, value) {
  */
 const NUMERIC = /^\d+(\.\d+)?$/;
 const META_KEYS = new Set(["id", "variant_id", "created_at", "updated_at"]);
+const GENERIC_VALUES = new Set(["other", "others", "na", "n/a", "unknown", ""]);
+const isGeneric = (value) => GENERIC_VALUES.has(String(value ?? "").trim().toLowerCase());
+
+/**
+ * Some APIs use a placeholder like "Other" instead of leaving a field empty. There is no
+ * dedicated transmission field in this data, so the type is inferred from the variant name.
+ * This is a best-effort guess from naming convention, not a value the API states directly.
+ */
+function inferTransmission(name) {
+  const text = String(name ?? "");
+  if (/\bDCT\b/i.test(text)) return "Automatic (DCT)";
+  if (/\biVT\b/i.test(text)) return "Automatic (iVT)";
+  if (/\biMT\b/i.test(text)) return "Manual (iMT)";
+  if (/\bAMT\b/i.test(text)) return "Automatic (AMT)";
+  if (/\bCVT\b/i.test(text)) return "Automatic (CVT)";
+  if (/(^|[^A-Za-z])AT([^A-Za-z]|$)/i.test(text)) return "Automatic";
+  return "Manual";
+}
+
+/** Decodes the handful of HTML entities that show up in API-supplied SEO text. */
+function decodeEntities(text) {
+  return String(text ?? "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "\u2019");
+}
 
 /** Nested objects shown as groups, in display order. */
 const GROUPS = [
@@ -173,8 +201,8 @@ export function toVariants(variants) {
     return {
       id: String(index),
       name: plain(row.name) || `Variant ${index + 1}`,
-      fuel: plain(row.fuel_type) || plain(engine.fuel_type),
-      transmission: plain(row.transmission_type),
+      fuel: !isGeneric(row.fuel_type) ? plain(row.fuel_type) : plain(engine.fuel_type),
+      transmission: !isGeneric(row.transmission_type) ? plain(row.transmission_type) : inferTransmission(row.name),
       engine: cc ? `${cc} cc` : kwh ? `${kwh} kWh battery` : motorKw ? `${motorKw} kW motor` : plain(engine.engine_name),
       power: powerValue ? `${powerValue}${plain(engine.power_unit) ? ` ${plain(engine.power_unit)}` : ""}` : "",
       torque: torqueValue ? `${torqueValue}${plain(engine.torque_unit) ? ` ${plain(engine.torque_unit)}` : ""}` : "",
@@ -184,7 +212,9 @@ export function toVariants(variants) {
           ? `${range} km range`
           : "",
       price: chosen ? formatInrShort(num(chosen.price)) : "",
+      priceValue: chosen ? num(chosen.price) : null,
       priceType: chosen ? plain(chosen.price_type) : "",
+      priceCity: chosen ? plain(chosen.city) : "",
       groups,
     };
   });
@@ -278,13 +308,40 @@ export function toSpecGroups(specs) {
   return groups;
 }
 
-/** Everything the detail page can show from GET /cars/{id}. */
+function toStringList(value) {
+  return Array.isArray(value) ? value.filter((v) => typeof v === "string" && v.trim()).map((v) => v.trim()) : [];
+}
+
+/** data.colors -> [{ name, hex }], available colors only, in the order the API returns them. */
+export function toColors(colors) {
+  if (!Array.isArray(colors)) return [];
+  return colors
+    .filter((c) => isObject(c) && String(c.is_available) !== "0" && typeof c.name === "string" && c.name.trim())
+    .map((c) => ({ name: c.name.trim(), hex: typeof c.hex_code === "string" && /^#[0-9a-f]{3,8}$/i.test(c.hex_code) ? c.hex_code : null }));
+}
+
+/** Everything the detail page can show from GET /cars/{id}. `raw` is the API's `data` object. */
 export function toDetail(raw) {
   if (!isObject(raw)) {
-    return { description: "", variants: [], features: [], faqs: [], specs: [] };
+    return { description: "", highlights: [], pros: [], cons: [], colors: [], seo: null, variants: [], features: [], faqs: [], specs: [] };
   }
+  const car = isObject(raw.car) ? raw.car : raw; // tolerate a flatter shape too
+
+  const seoRaw = isObject(raw.seo) ? raw.seo : null;
+  const seo = seoRaw
+    ? {
+        title: typeof seoRaw.seo_title === "string" ? decodeEntities(seoRaw.seo_title).trim() : "",
+        description: typeof seoRaw.meta_description === "string" ? decodeEntities(seoRaw.meta_description).trim() : "",
+      }
+    : null;
+
   return {
-    description: typeof raw.description === "string" ? raw.description.trim() : "",
+    description: typeof car.description === "string" ? car.description.trim() : "",
+    highlights: toStringList(car.highlights),
+    pros: toStringList(car.pros),
+    cons: toStringList(car.cons),
+    colors: toColors(raw.colors),
+    seo: seo && (seo.title || seo.description) ? seo : null,
     variants: toVariants(raw.variants),
     features: toFeatureGroups(raw.features_by_category ?? raw.features),
     faqs: toFaqs(raw.faqs),

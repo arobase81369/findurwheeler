@@ -744,3 +744,64 @@ input[type="range"] { width: 100%; accent-color: var(--color-accent-strong); }
 
 .prose-page { max-width: 720px; }
 .prose-page__note { margin-top: var(--space-24); padding: var(--space-16); font-size: var(--text-sm); color: var(--color-muted); background: var(--color-white); border: 1px dashed var(--color-border); border-radius: var(--radius-md); }
+
+/* 22. Variant filter row, checkbox compare, on-road price ------------------------------ */
+.variants__transmission { display: flex; flex-wrap: wrap; gap: var(--space-8); margin-bottom: var(--space-16); }
+.radio-pill { display: inline-flex; align-items: center; gap: var(--space-8); padding: var(--space-8) var(--space-16); font-size: var(--text-sm); font-weight: 500; background: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-pill); cursor: pointer; transition: border-color 0.15s ease, background-color 0.15s ease; }
+.radio-pill input { accent-color: var(--color-accent-strong); }
+.radio-pill:hover { border-color: var(--color-accent); }
+.radio-pill.is-selected { font-weight: 600; color: var(--color-accent-strong); background: var(--color-accent-soft); border-color: var(--color-accent-line); }
+
+.variants__empty { padding: var(--space-24); text-align: center; color: var(--color-muted); background: var(--color-white); border: 1px dashed var(--color-border); border-radius: var(--radius-lg); }
+
+.variants__check { display: flex; align-items: center; }
+.variants__check input { width: 20px; height: 20px; accent-color: var(--color-accent-strong); cursor: pointer; }
+.variants__head-check { width: 20px; }
+.variants__name { cursor: pointer; }
+
+.variants__compare-cell { display: flex; align-items: center; }
+.variants__compare-btn { display: inline-flex; align-items: center; gap: var(--space-4); min-height: 36px; padding: var(--space-4) var(--space-12); font-size: 0.8125rem; font-weight: 600; color: var(--color-navy); background: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-pill); cursor: pointer; transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease; }
+.variants__compare-btn:hover:not(:disabled) { border-color: var(--color-accent); }
+.variants__compare-btn.is-checked { color: var(--color-white); background: var(--color-accent-strong); border-color: var(--color-accent-strong); }
+.variants__compare-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Extend the row grid: checkbox + name + stat columns + compare + details button */
+.variants__row { grid-template-columns: auto 1fr auto auto; }
+.variants__card--plain .variants__row { grid-template-columns: auto 1fr auto auto; }
+@media (min-width: 768px) {
+  .variants__head, .variants__row { grid-template-columns: 28px minmax(160px, 2fr) repeat(var(--cols), 1fr) 100px 90px; }
+  .variants__card--plain .variants__head, .variants__card--plain .variants__row { grid-template-columns: 28px 1fr 100px 90px; }
+}
+
+.variant-compare__header { margin-bottom: var(--space-16); }
+.variant-compare__hint { margin-top: var(--space-4); font-size: var(--text-sm); color: var(--color-muted); }
+
+/* On-road price panel (inside variant details) */
+.variants__group--onroad { padding-top: var(--space-16); }
+.onroad { padding: var(--space-16); background: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.onroad__header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-8); }
+.onroad__city { font-size: var(--text-sm); font-weight: 600; color: var(--color-muted); }
+.onroad__amount { font-family: var(--font-heading); font-size: var(--text-xl); font-weight: 600; color: var(--color-accent-strong); }
+.onroad__rows { display: grid; gap: var(--space-4); margin-top: var(--space-12); font-size: var(--text-sm); }
+.onroad__rows > div { display: flex; justify-content: space-between; gap: var(--space-16); padding-block: var(--space-4); }
+.onroad__rows dt { color: var(--color-muted); }
+.onroad__rows dd { font-weight: 500; }
+.onroad__inputs { display: grid; gap: var(--space-16); margin-top: var(--space-16); padding-top: var(--space-16); border-top: 1px solid var(--color-border); }
+@media (min-width: 640px) { .onroad__inputs { grid-template-columns: 1fr 1fr; } }
+.onroad__note { margin-top: var(--space-12); font-size: 0.75rem; line-height: 1.5; color: var(--color-muted); }
+
+/* 23. Highlights, pros/cons, colours (car detail) -------------------------------------- */
+.pros-cons { display: grid; gap: var(--space-16); margin-top: var(--space-16); }
+@media (min-width: 640px) { .pros-cons { grid-template-columns: 1fr 1fr; } }
+.pros-cons__col { padding: var(--space-16); background: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.pros-cons__col--pros { border-top: 3px solid var(--color-accent-strong); }
+.pros-cons__col--cons { border-top: 3px solid #cbd5e1; }
+.pros-cons__title { margin-bottom: var(--space-8); font-size: var(--text-sm); }
+.pros-cons__col li { display: flex; align-items: flex-start; gap: var(--space-8); padding-block: var(--space-4); font-size: var(--text-sm); }
+.pros-cons__col--pros svg { color: var(--color-accent-strong); flex: none; margin-top: 2px; }
+.pros-cons__col--cons svg { color: #94a3b8; flex: none; margin-top: 2px; }
+
+.colors { display: flex; flex-wrap: wrap; gap: var(--space-12); margin-top: var(--space-16); }
+.colors__item { display: flex; flex-direction: column; align-items: center; gap: var(--space-8); width: 92px; text-align: center; }
+.colors__swatch { display: block; width: 40px; height: 40px; border-radius: 50%; background: repeating-conic-gradient(#e2e8f0 0% 25%, #f1f5f9 0% 50%) 0 0 / 12px 12px; border: 1px solid var(--color-border); }
+.colors__name { font-size: 0.75rem; color: var(--color-body); line-height: 1.3; }

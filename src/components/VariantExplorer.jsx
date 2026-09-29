@@ -1,35 +1,40 @@
 "use client";
 
-import { Fragment, useId, useState } from "react";
+import { Fragment, useId, useMemo, useState } from "react";
 import { CarTabs } from "./CarTabs";
 import { Icon } from "./Icon";
+import { OnRoadPrice } from "./OnRoadPrice";
 
 const STAT_COLUMNS = [
   ["engine", "Engine"],
   ["mileage", "Mileage"],
   ["price", "Price"],
 ];
+const MAX_COMPARE = 3;
 
 const hasDetails = (variant) => variant.groups.some((g) => g.rows.some((r) => r.bool !== false));
 const findRow = (variant, group, label) => variant.groups.find((g) => g.name === group)?.rows.find((r) => r.label === label);
 
 /**
- * Variants grouped by fuel type (tabs), expandable rows, and a two-variant comparison.
+ * Variants grouped by fuel type (tabs) and filterable by transmission, each row expandable
+ * with a checkbox to select up to 3 for comparison, and an on-road price estimate per variant.
  * @param {{ title: string, variants: ReturnType<typeof import("@/lib/detail-model.js").toVariants> }} props
  */
 export function VariantExplorer({ title, variants }) {
   const uid = useId();
   const [openId, setOpenId] = useState(() => variants.find(hasDetails)?.id ?? null);
-  const [firstId, setFirstId] = useState(variants[0].id);
-  const [secondId, setSecondId] = useState(variants[variants.length - 1].id);
+  const [transmission, setTransmission] = useState("all");
+  const [selected, setSelected] = useState(() => variants.slice(0, 2).map((v) => v.id));
   const [onlyDiff, setOnlyDiff] = useState(false);
 
-  // Say "ex-showroom" only when the API says the prices are ex-showroom.
   const exShowroom = variants.every((v) => !v.priceType || v.priceType === "ex_showroom") && variants.some((v) => v.priceType);
   const priceLabel = exShowroom ? "Price (ex-showroom)" : "Price";
+  const priceCities = [...new Set(variants.map((v) => v.priceCity).filter(Boolean))];
+  const priceCityNote = priceCities.length === 1 ? priceCities[0] : priceCities.length > 1 ? "varies by variant" : "";
 
   const columns = STAT_COLUMNS.filter(([key]) => variants.some((v) => v[key]));
 
+  const transmissions = [...new Set(variants.map((v) => v.transmission).filter(Boolean))];
   const fuels = [...new Set(variants.map((v) => v.fuel).filter(Boolean))];
   const withoutFuel = variants.filter((v) => !v.fuel);
   const fuelGroups =
@@ -40,31 +45,62 @@ export function VariantExplorer({ title, variants }) {
         ]
       : [{ key: "all", label: "All variants", items: variants }];
 
+  function toggleSelected(id) {
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= MAX_COMPARE) return prev;
+      return [...prev, id];
+    });
+  }
+
   function renderList(items) {
+    const shown = transmission === "all" ? items : items.filter((v) => v.transmission === transmission);
+
+    if (shown.length === 0) {
+      return <p className="variants__empty">No variants match this filter.</p>;
+    }
+
     return (
       <div
         className={`variants__card${columns.length === 0 ? " variants__card--plain" : ""}`}
         style={{ "--cols": Math.max(columns.length, 1) }}
       >
         <div className="variants__head" aria-hidden="true">
+          <span className="variants__head-check" />
           <span>Variant</span>
           {columns.map(([key, label]) => (
             <span key={key}>{label}</span>
           ))}
+          <span>Compare</span>
           <span />
         </div>
 
         <ul>
-          {items.map((variant) => {
+          {shown.map((variant) => {
             const expanded = openId === variant.id;
+            const checked = selected.includes(variant.id);
+            const disabled = !checked && selected.length >= MAX_COMPARE;
             const detailsId = `${uid}-details-${variant.id}`;
+            const checkboxId = `${uid}-check-${variant.id}`;
             const meta = [variant.transmission, variant.power, variant.torque].filter(Boolean).join(" · ");
 
             return (
               <li key={variant.id} className="variants__item">
                 <div className="variants__row">
+                  <div className="variants__check">
+                    <input
+                      type="checkbox"
+                      id={checkboxId}
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => toggleSelected(variant.id)}
+                    />
+                  </div>
+
                   <div className="variants__name-block">
-                    <p className="variants__name">{variant.name}</p>
+                    <label htmlFor={checkboxId} className="variants__name">
+                      {variant.name}
+                    </label>
                     {meta ? <p className="variants__meta">{meta}</p> : null}
                   </div>
 
@@ -79,7 +115,21 @@ export function VariantExplorer({ title, variants }) {
                     </div>
                   ) : null}
 
-                  {hasDetails(variant) ? (
+                  <div className="variants__compare-cell">
+                    <button
+                      type="button"
+                      className={`variants__compare-btn${checked ? " is-checked" : ""}`}
+                      aria-pressed={checked}
+                      disabled={disabled}
+                      onClick={() => toggleSelected(variant.id)}
+                      title={disabled ? `You can compare up to ${MAX_COMPARE} variants` : undefined}
+                    >
+                      <Icon name={checked ? "check" : "plus"} size={14} />
+                      {checked ? "Added" : "Compare"}
+                    </button>
+                  </div>
+
+                  {hasDetails(variant) || variant.priceValue ? (
                     <button
                       type="button"
                       className="variants__more"
@@ -93,7 +143,7 @@ export function VariantExplorer({ title, variants }) {
                   ) : null}
                 </div>
 
-                {hasDetails(variant) ? (
+                {hasDetails(variant) || variant.priceValue ? (
                   <div id={detailsId} hidden={!expanded} className="variants__details">
                     {variant.groups.map((group) => {
                       const visible = group.rows.filter((row) => row.bool !== false);
@@ -118,6 +168,12 @@ export function VariantExplorer({ title, variants }) {
                         </section>
                       );
                     })}
+
+                    {variant.priceValue ? (
+                      <section className="variants__group variants__group--onroad">
+                        <OnRoadPrice exShowroom={variant.priceValue} priceCity={variant.priceCity} />
+                      </section>
+                    ) : null}
                   </div>
                 ) : null}
               </li>
@@ -128,49 +184,44 @@ export function VariantExplorer({ title, variants }) {
     );
   }
 
-  // ---- comparison ----
-  const first = variants.find((v) => v.id === firstId) ?? variants[0];
-  const second = variants.find((v) => v.id === secondId) ?? variants[variants.length - 1];
+  // ---- comparison (driven by the checkboxes above) ----
+  const compareVariants = selected.map((id) => variants.find((v) => v.id === id)).filter(Boolean);
 
-  const mainRows = [
-    [priceLabel, first.price, second.price, true],
-    ["Fuel type", first.fuel, second.fuel],
-    ["Transmission", first.transmission, second.transmission],
-    ["Engine", first.engine, second.engine],
-    ["Power", first.power, second.power],
-    ["Torque", first.torque, second.torque],
-    ["Mileage", first.mileage, second.mileage],
-  ]
-    .filter(([, a, b]) => a || b)
-    .map(([label, a, b, isPrice]) => ({ label, a: a || "—", b: b || "—", isPrice: Boolean(isPrice) }));
+  const mainRows = useMemo(() => {
+    if (compareVariants.length < 2) return [];
+    const specs = [
+      [priceLabel, (v) => v.price, true],
+      ["Fuel type", (v) => v.fuel],
+      ["Transmission", (v) => v.transmission],
+      ["Engine", (v) => v.engine],
+      ["Power", (v) => v.power],
+      ["Torque", (v) => v.torque],
+      ["Mileage", (v) => v.mileage],
+    ];
+    return specs
+      .map(([label, get, isPrice]) => ({ label, values: compareVariants.map((v) => get(v) || ""), isPrice: Boolean(isPrice) }))
+      .filter((row) => row.values.some(Boolean));
+  }, [compareVariants, priceLabel]);
 
-  const groupNames = [...new Set([...first.groups, ...second.groups].map((g) => g.name))];
-  const groupRows = groupNames
-    .map((name) => {
-      const labels = [
-        ...new Set(
-          [first, second].flatMap((v) => v.groups.find((g) => g.name === name)?.rows.map((r) => r.label) ?? []),
-        ),
-      ];
-      const rows = labels.map((label) => ({
-        label,
-        a: findRow(first, name, label)?.value ?? "—",
-        b: findRow(second, name, label)?.value ?? "—",
-        isPrice: false,
-      }));
-      return { name, rows };
-    })
-    .filter((g) => g.rows.length > 0);
+  const groupRows = useMemo(() => {
+    if (compareVariants.length < 2) return [];
+    const names = [...new Set(compareVariants.flatMap((v) => v.groups.map((g) => g.name)))];
+    return names
+      .map((name) => {
+        const labels = [...new Set(compareVariants.flatMap((v) => v.groups.find((g) => g.name === name)?.rows.map((r) => r.label) ?? []))];
+        const rows = labels.map((label) => ({
+          label,
+          values: compareVariants.map((v) => findRow(v, name, label)?.value ?? ""),
+        }));
+        return { name, rows: rows.filter((r) => r.values.some(Boolean)) };
+      })
+      .filter((g) => g.rows.length > 0);
+  }, [compareVariants]);
 
-  const keep = (row) => !onlyDiff || row.a !== row.b;
-  const shownMain = mainRows.filter(keep);
-  const shownGroups = groupRows.map((g) => ({ ...g, rows: g.rows.filter(keep) })).filter((g) => g.rows.length > 0);
-
-  const options = variants.map((v) => (
-    <option key={v.id} value={v.id}>
-      {v.price ? `${v.name} — ${v.price}` : v.name}
-    </option>
-  ));
+  const differs = (values) => new Set(values.map((v) => v || "—")).size > 1;
+  const keep = (values) => !onlyDiff || differs(values);
+  const shownMain = mainRows.filter((row) => keep(row.values));
+  const shownGroups = groupRows.map((g) => ({ ...g, rows: g.rows.filter((row) => keep(row.values)) })).filter((g) => g.rows.length > 0);
 
   return (
     <div className="variants">
@@ -179,7 +230,8 @@ export function VariantExplorer({ title, variants }) {
         {title} Variants
       </h2>
       <p className="variants__sub">
-        Select a fuel type to see every variant, its specifications and {exShowroom ? "ex-showroom " : ""}price.
+        Select a fuel type to see every variant, its specifications and {exShowroom ? "ex-showroom " : ""}price
+        {priceCityNote ? ` (listed for ${priceCityNote})` : ""}.
       </p>
 
       {fuels.length > 0 ? (
@@ -196,80 +248,102 @@ export function VariantExplorer({ title, variants }) {
             content: renderList(group.items),
           }))}
         />
-      ) : (
-        renderList(fuelGroups[0].items)
-      )}
+      ) : null}
 
-      {variants.length >= 2 ? (
-        <div className="variant-compare">
-          <h3 className="variant-compare__title">Compare variants</h3>
-
-          <div className="variant-compare__pickers">
-            <label className="field">
-              <span className="field__label">Variant 1</span>
-              <select className="field__control field__control--pill" value={firstId} onChange={(e) => setFirstId(e.target.value)}>
-                {options}
-              </select>
+      {transmissions.length > 1 ? (
+        <div className="variants__transmission" role="radiogroup" aria-label="Transmission">
+          {["all", ...transmissions].map((option) => (
+            <label key={option} className={`radio-pill${transmission === option ? " is-selected" : ""}`}>
+              <input
+                type="radio"
+                name={`${uid}-transmission`}
+                value={option}
+                checked={transmission === option}
+                onChange={() => setTransmission(option)}
+              />
+              {option === "all" ? "All" : option}
             </label>
-            <span className="variant-compare__vs" aria-hidden="true">
-              VS
-            </span>
-            <label className="field">
-              <span className="field__label">Variant 2</span>
-              <select className="field__control field__control--pill" value={secondId} onChange={(e) => setSecondId(e.target.value)}>
-                {options}
-              </select>
-            </label>
-          </div>
-
-          <button type="button" className="btn btn--secondary btn--sm variant-compare__toggle" aria-pressed={onlyDiff} onClick={() => setOnlyDiff((v) => !v)}>
-            <Icon name={onlyDiff ? "check" : "sliders"} size={16} />
-            {onlyDiff ? "Showing differences only" : "Show differences only"}
-          </button>
-
-          <div className="spec-table-wrap" role="region" aria-label="Variant comparison" tabIndex={0}>
-            <table className="spec-table">
-              <thead>
-                <tr>
-                  <th scope="col">Specification</th>
-                  <th scope="col">{first.name}</th>
-                  <th scope="col">{second.name}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shownMain.map((row) => (
-                  <tr key={row.label}>
-                    <th scope="row">{row.label}</th>
-                    <td className={row.isPrice ? "spec-table__price" : undefined}>{row.a}</td>
-                    <td className={row.isPrice ? "spec-table__price" : undefined}>{row.b}</td>
-                  </tr>
-                ))}
-                {shownGroups.map((group) => (
-                  <Fragment key={group.name}>
-                    <tr className="spec-table__group">
-                      <th scope="colgroup" colSpan={3}>
-                        {group.name}
-                      </th>
-                    </tr>
-                    {group.rows.map((row) => (
-                      <tr key={`${group.name}-${row.label}`}>
-                        <th scope="row">{row.label}</th>
-                        <td>{row.a}</td>
-                        <td>{row.b}</td>
-                      </tr>
-                    ))}
-                  </Fragment>
-                ))}
-                {shownMain.length === 0 && shownGroups.length === 0 ? (
-                  <tr>
-                    <td colSpan={3}>These variants have the same values in every row.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+          ))}
         </div>
       ) : null}
+
+      {fuels.length === 0 ? renderList(fuelGroups[0].items) : null}
+
+      <div className="variant-compare">
+        <div className="variant-compare__header">
+          <h3 className="variant-compare__title">Compare variants</h3>
+          <p className="variant-compare__hint">
+            {compareVariants.length === 0
+              ? `Select up to ${MAX_COMPARE} variants above using their checkbox or Compare button.`
+              : `${compareVariants.length} of ${MAX_COMPARE} selected.`}
+          </p>
+        </div>
+
+        {compareVariants.length < 2 ? (
+          <p className="variants__empty">Select at least 2 variants to compare them.</p>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm variant-compare__toggle"
+              aria-pressed={onlyDiff}
+              onClick={() => setOnlyDiff((v) => !v)}
+            >
+              <Icon name={onlyDiff ? "check" : "sliders"} size={16} />
+              {onlyDiff ? "Showing differences only" : "Show differences only"}
+            </button>
+
+            <div className="spec-table-wrap" role="region" aria-label="Variant comparison" tabIndex={0}>
+              <table className="spec-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Specification</th>
+                    {compareVariants.map((v) => (
+                      <th key={v.id} scope="col">
+                        {v.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {shownMain.map((row) => (
+                    <tr key={row.label}>
+                      <th scope="row">{row.label}</th>
+                      {row.values.map((value, i) => (
+                        <td key={compareVariants[i].id} className={row.isPrice ? "spec-table__price" : undefined}>
+                          {value || "—"}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  {shownGroups.map((group) => (
+                    <Fragment key={group.name}>
+                      <tr className="spec-table__group">
+                        <th scope="colgroup" colSpan={compareVariants.length + 1}>
+                          {group.name}
+                        </th>
+                      </tr>
+                      {group.rows.map((row) => (
+                        <tr key={`${group.name}-${row.label}`}>
+                          <th scope="row">{row.label}</th>
+                          {row.values.map((value, i) => (
+                            <td key={compareVariants[i].id}>{value || "—"}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </Fragment>
+                  ))}
+                  {shownMain.length === 0 && shownGroups.length === 0 ? (
+                    <tr>
+                      <td colSpan={compareVariants.length + 1}>These variants have the same values in every row.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

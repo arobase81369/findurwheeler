@@ -1,6 +1,6 @@
 export const SITE = {
   name: "FindUrWheeler",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://findurwheeler.com",
+  url: process.env.NEXT_SITE_URL ?? "https://findurwheeler.com",
   tagline: "Find the right car for you",
   description:
     "Explore new cars in India: prices, variants, specifications, mileage, fuel types, upcoming launches and side-by-side comparisons.",

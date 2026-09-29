@@ -31,8 +31,10 @@ export async function generateMetadata({ params }) {
   }
   if (!car) return { title: "Car not found", robots: { index: false } };
 
+  const rawDetail = await getCarDetail(car.id);
+  const detail = toDetail(rawDetail);
+
   const year = car.modelYear ? ` ${car.modelYear}` : "";
-  const title = `${car.title}${year} — Price, Mileage & Details in India`;
   const facts = [
     car.priceLabel ? `Price range ${car.priceLabel}` : null,
     car.mileageLabel ? `mileage ${car.mileageLabel}` : null,
@@ -40,7 +42,11 @@ export async function generateMetadata({ params }) {
   ]
     .filter(Boolean)
     .join(", ");
-  const description = `${car.title}${year}${car.bodyType ? ` ${car.bodyType}` : ""} in India.${facts ? ` ${facts}.` : ""}`;
+
+  // Prefer SEO fields from the API when present; fall back to a generated title/description.
+  const title = detail.seo?.title || `${car.title}${year} — Price, Mileage & Details in India`;
+  const description =
+    detail.seo?.description || `${car.title}${year}${car.bodyType ? ` ${car.bodyType}` : ""} in India.${facts ? ` ${facts}.` : ""}`;
 
   return {
     title,
@@ -79,6 +85,7 @@ export default async function CarDetailPage({ params }) {
 
   const [rawDetail, brands] = await Promise.all([getCarDetail(car.id), getBrands().catch(() => [])]);
   const detail = toDetail(rawDetail);
+  const colorNote = detail.colors.length === 1 ? "1 colour available" : `${detail.colors.length} colours available`;
   const brand = brands.find((b) => b.slug === car.brandSlug) ?? null;
 
   const sameBody = car.bodyType ? cars.filter((c) => c.slug !== car.slug && c.bodyType === car.bodyType) : [];
@@ -189,6 +196,63 @@ export default async function CarDetailPage({ params }) {
             {brand?.country ? <Fact icon="building" label="Brand origin">{brand.country}</Fact> : null}
           </dl>
         </section>
+
+        {(detail.highlights.length > 0 || detail.pros.length > 0 || detail.cons.length > 0) ? (
+          <section className="detail-section" aria-labelledby="highlights-title">
+            <h2 id="highlights-title" className="section-header__title">Highlights</h2>
+            {detail.highlights.length > 0 ? (
+              <ul className="chips" aria-label="Highlights">
+                {detail.highlights.map((item) => (
+                  <li key={item} className="chip">{item}</li>
+                ))}
+              </ul>
+            ) : null}
+
+            {detail.pros.length > 0 || detail.cons.length > 0 ? (
+              <div className="pros-cons">
+                {detail.pros.length > 0 ? (
+                  <div className="pros-cons__col pros-cons__col--pros">
+                    <h3 className="pros-cons__title">Pros</h3>
+                    <ul>
+                      {detail.pros.map((item) => (
+                        <li key={item}><Icon name="check" size={16} />{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {detail.cons.length > 0 ? (
+                  <div className="pros-cons__col pros-cons__col--cons">
+                    <h3 className="pros-cons__title">Cons</h3>
+                    <ul>
+                      {detail.cons.map((item) => (
+                        <li key={item}><Icon name="x" size={16} />{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
+        {detail.colors.length > 0 ? (
+          <section className="detail-section" aria-labelledby="colors-title">
+            <h2 id="colors-title" className="section-header__title">Available colours</h2>
+            <p className="section-header__text">{colorNote}</p>
+            <ul className="colors">
+              {detail.colors.map((color) => (
+                <li key={color.name} className="colors__item">
+                  <span
+                    className="colors__swatch"
+                    style={color.hex ? { backgroundColor: color.hex } : undefined}
+                    aria-hidden="true"
+                  />
+                  <span className="colors__name">{color.name}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         {car.priceMin != null ? (
           <section id="price" className="detail-section" aria-labelledby="price-title">
